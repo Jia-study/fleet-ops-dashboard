@@ -257,8 +257,8 @@
 
   <!-- Alerts -->
   <div class="page-title" style="margin-top: 8px;">
-    <h2>⚠️ 관심 차량 알림</h2>
-    <p>데이터 기반 자동 탐지 — 즉시 확인이 필요한 차량입니다.</p>
+    <h2>⚠️ 차량 조치 권고 알림</h2>
+    <p>데이터 기반 자동 탐지 — 조치가 필요한 차량입니다.</p>
   </div>
   <div class="alert-section">
     <div class="alert-grid">
@@ -317,7 +317,7 @@
       <div class="card-header">
         <div>
           <div class="card-title">캠프별 평균 가동률</div>
-          <div class="card-sub">낮은 캠프는 운영 점검 필요</div>
+          <div class="card-sub"> 가동률 낮은 캠프는 운영 점검 필요</div>
         </div>
       </div>
       <div class="chart-wrap"><canvas id="chartCamp"></canvas></div>
@@ -582,7 +582,7 @@ function renderInsights(vehicles, records, alerts) {
     insights.push({
       level: 'warning',
       tag: '품질 QA',
-      text: `30일 내 재정비가 발생한 차량 <strong>${alerts.frequent}대</strong> — 초기 정비 품질 또는 부품 이슈 가능성, 정비소 피드백 루프 점검 권고`
+      text: `30일 내 재정비가 발생한 차량 <strong>${alerts.frequent}대</strong> — 초기 정비 품질 또는 부품 이슈 가능성, 정비소 점검 권고`
     });
   }
   
