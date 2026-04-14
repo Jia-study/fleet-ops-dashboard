@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Operations Dashboard | CLS 차량 정비 분석</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-bg: #eff6ff;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --success: #059669;
+    --success-light: #d1fae5;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  h1, h2, h3, h4 { font-weight: 700; }
+  .header {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+  }
+  .logo-text h1 { font-size: 16px; }
+  .logo-text p { font-size: 12px; color: var(--gray-500); }
+  .header-meta { font-size: 12px; color: var(--gray-500); }
+  .header-meta strong { color: var(--gray-900); font-weight: 700; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px 48px; }
+
+  .page-title { margin-bottom: 24px; }
+  .page-title h2 { font-size: 22px; margin-bottom: 4px; }
+  .page-title p { color: var(--gray-500); font-size: 13px; }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+  }
+  .kpi-label {
+    font-size: 12px; color: var(--gray-500); margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 26px; font-weight: 700; color: var(--gray-900);
+    line-height: 1.2;
+  }
+  .kpi-sub {
+    font-size: 12px; color: var(--gray-500); margin-top: 6px;
+  }
+  .kpi-card.highlight { background: var(--primary-bg); border-color: var(--primary-light); }
+  .kpi-card.highlight .kpi-value { color: var(--primary); }
+
+  /* Layout Grid */
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 340px; gap: 16px;
+    margin-bottom: 16px;
+  }
+  .card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+  }
+  .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 15px; }
+  .card-sub { font-size: 12px; color: var(--gray-500); }
+
+  .chart-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-wrap { position: relative; height: 240px; }
+
+  /* Insights Panel */
+  .insights { height: 100%; }
+  .insight-item {
+    padding: 12px; border-radius: 8px; margin-bottom: 10px;
+    font-size: 13px; line-height: 1.5;
+    border-left: 3px solid;
+  }
+  .insight-item:last-child { margin-bottom: 0; }
+  .insight-item.danger { background: var(--danger-light); border-color: var(--danger); }
+  .insight-item.warning { background: var(--warning-light); border-color: var(--warning); }
+  .insight-item.info { background: var(--primary-bg); border-color: var(--primary-light); }
+  .insight-tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .insight-tag.danger { background: var(--danger); color: #fff; }
+  .insight-tag.warning { background: var(--warning); color: #fff; }
+  .insight-tag.info { background: var(--primary); color: #fff; }
+
+  /* Alert Section */
+  .alert-section { margin-bottom: 16px; }
+  .alert-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .alert-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px;
+  }
+  .alert-card.danger { border-left: 4px solid var(--danger); }
+  .alert-card.warning { border-left: 4px solid var(--warning); }
+  .alert-card.info { border-left: 4px solid var(--primary); }
+  .alert-title {
+    font-size: 12px; font-weight: 700; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .alert-count {
+    font-size: 24px; font-weight: 700; margin-bottom: 4px;
+  }
+  .alert-card.danger .alert-count { color: var(--danger); }
+  .alert-card.warning .alert-count { color: var(--warning); }
+  .alert-card.info .alert-count { color: var(--primary); }
+  .alert-desc { font-size: 12px; color: var(--gray-500); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .filter-input, .filter-select {
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px; font-family: inherit;
+    background: #fff; color: var(--gray-900);
+  }
+  .filter-input { flex: 1; min-width: 200px; }
+  .filter-input:focus, .filter-select:focus {
+    outline: none; border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: var(--gray-50); }
+  th {
+    text-align: left; padding: 10px 12px;
+    font-weight: 700; color: var(--gray-700);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 12px; border-bottom: 1px solid var(--gray-100);
+    white-space: nowrap;
+  }
+  tbody tr:hover { background: var(--gray-50); }
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 10px; font-size: 11px; font-weight: 700;
+  }
+  .badge-normal { background: var(--success-light); color: var(--success); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-type-예방정비 { background: var(--success-light); color: var(--success); }
+  .badge-type-사후정비 { background: var(--warning-light); color: var(--warning); }
+  .badge-type-긴급정비 { background: var(--danger-light); color: var(--danger); }
+
+  .empty { padding: 40px; text-align: center; color: var(--gray-500); }
+
+  .footer {
+    text-align: center; padding: 24px;
+    font-size: 12px; color: var(--gray-500);
+  }
+
+  @media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .chart-row { grid-template-columns: 1fr; }
+    .alert-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">CLS</div>
+      <div class="logo-text">
+        <h1>Fleet Operations Dashboard</h1>
+        <p>차량 정비 데이터 기반 운영 인사이트</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      기준일 <strong id="refDate">-</strong> · 최근 12개월 데이터
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h2>운영 현황 요약</h2>
+    <p>Fleet 전체의 가동률·비용·정비 이력을 한눈에 확인하세요.</p>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card highlight">
+      <div class="kpi-label">전체 Fleet 가동률</div>
+      <div class="kpi-value" id="kpiUptime">-</div>
+      <div class="kpi-sub">목표 95% 기준</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">운영 차량 수</div>
+      <div class="kpi-value" id="kpiVehicles">-</div>
+      <div class="kpi-sub">전국 배송캠프 기준</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">12개월 총 정비비</div>
+      <div class="kpi-value" id="kpiCost">-</div>
+      <div class="kpi-sub">총 <span id="kpiRecords">-</span>건 처리</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">긴급정비 비율</div>
+      <div class="kpi-value" id="kpiEmergency">-</div>
+      <div class="kpi-sub">낮을수록 안정적</div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="page-title" style="margin-top: 8px;">
+    <h2>⚠️ 관심 차량 알림</h2>
+    <p>데이터 기반 자동 탐지 — 즉시 확인이 필요한 차량입니다.</p>
+  </div>
+  <div class="alert-section">
+    <div class="alert-grid">
+      <div class="alert-card danger">
+        <div class="alert-title">교체 권고 차량</div>
+        <div class="alert-count" id="alertReplace">-</div>
+        <div class="alert-desc">누적 정비비가 임계치를 초과</div>
+      </div>
+      <div class="alert-card warning">
+        <div class="alert-title">재정비 빈발 차량</div>
+        <div class="alert-count" id="alertFrequent">-</div>
+        <div class="alert-desc">7일 내 사후·긴급정비 재발생</div>
+      </div>
+      <div class="alert-card info">
+        <div class="alert-title">비용 이상 차량</div>
+        <div class="alert-count" id="alertCost">-</div>
+        <div class="alert-desc">평균 대비 3배 이상 비용 발생</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts + Insights -->
+  <div class="main-grid">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">월별 정비비 추이</div>
+          <div class="card-sub">최근 12개월 · 정비 유형별 누적</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
+    </div>
+
+    <div class="card insights">
+      <div class="card-header">
+        <div>
+          <div class="card-title">💡 자동 생성 인사이트</div>
+          <div class="card-sub">룰 기반 분석 결과</div>
+        </div>
+      </div>
+      <div id="insightsList"></div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">정비 유형별 비율</div>
+          <div class="card-sub">예방정비 비율이 높을수록 이상적</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chartType"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">캠프별 평균 가동률</div>
+          <div class="card-sub">낮은 캠프는 운영 점검 필요</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="chartCamp"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Vehicle Table -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">차량별 운영 현황</div>
+        <div class="card-sub">검색·필터로 원하는 차량을 바로 찾으세요</div>
+      </div>
+    </div>
+    <div class="filters">
+      <input class="filter-input" id="searchInput" placeholder="차량번호, 모델명 검색..." />
+      <select class="filter-select" id="campFilter">
+        <option value="">전체 캠프</option>
+      </select>
+      <select class="filter-select" id="statusFilter">
+        <option value="">전체 상태</option>
+        <option value="danger">교체 권고</option>
+        <option value="warning">주의</option>
+        <option value="normal">정상</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="vehicleTable">
+        <thead>
+          <tr>
+            <th>차량번호</th>
+            <th>배송캠프</th>
+            <th>모델</th>
+            <th>연식</th>
+            <th>주행거리</th>
+            <th>누적 정비비</th>
+            <th>정비 횟수</th>
+            <th>가동률</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="vehicleTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Records -->
+  <div class="card" style="margin-top: 16px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">최근 정비 이력</div>
+        <div class="card-sub">최근 10건</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>정비일</th>
+            <th>차량번호</th>
+            <th>캠프</th>
+            <th>유형</th>
+            <th>정비 항목</th>
+            <th>정비소</th>
+            <th>비용</th>
+            <th>소요일</th>
+          </tr>
+        </thead>
+        <tbody id="recordsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <p>Fleet Operations Dashboard · 프로토타입 v1.0 · 가상 데이터 기반 데모</p>
+  <p style="margin-top: 4px;">쿠팡로지스틱스서비스 Fleet Data &amp; AI Operations Specialist 지원용 · 최지아</p>
+</footer>
+
+<script>
+// ==================== 데이터 로드 ====================
+let FLEET_DATA = null;
+
+async function loadData() {
+  const res = await fetch('fleet_data.json');
+  FLEET_DATA = await res.json();
+  initDashboard();
+}
+
+// ==================== 포맷 유틸 ====================
+const fmt = {
+  won: (n) => '₩' + n.toLocaleString('ko-KR'),
+  wonShort: (n) => n >= 10000000 ? (n/10000000).toFixed(1) + '천만' 
+                  : n >= 10000 ? (n/10000).toFixed(0) + '만' : n.toLocaleString(),
+  km: (n) => n.toLocaleString('ko-KR') + ' km',
+  pct: (n) => n.toFixed(1) + '%',
+  num: (n) => n.toLocaleString('ko-KR'),
+};
+
+// ==================== 차량 상태 판정 ====================
+function getVehicleStatus(v, records) {
+  // 교체 권고: 누적 정비비 300만원 이상 AND 연식 4년 이상
+  if (v.total_maintenance_cost >= 3000000 && v.age_years >= 4) {
+    return { level: 'danger', label: '교체 권고' };
+  }
+  // 주의: 가동률 90% 미만 OR 정비 5회 이상
+  if (v.uptime_rate < 90 || v.maintenance_count >= 5) {
+    return { level: 'warning', label: '주의' };
+  }
+  return { level: 'normal', label: '정상' };
+}
+
+// ==================== 초기화 ====================
+function initDashboard() {
+  document.getElementById('refDate').textContent = FLEET_DATA.generated_at;
+  
+  const vehicles = FLEET_DATA.vehicles;
+  const records = FLEET_DATA.maintenance_records;
+  
+  // KPI 계산
+  const totalCost = records.reduce((s, r) => s + r.cost, 0);
+  const avgUptime = vehicles.reduce((s, v) => s + v.uptime_rate, 0) / vehicles.length;
+  const emergencyCount = records.filter(r => r.type === '긴급정비').length;
+  const emergencyRate = (emergencyCount / records.length) * 100;
+  
+  document.getElementById('kpiUptime').textContent = fmt.pct(avgUptime);
+  document.getElementById('kpiVehicles').textContent = vehicles.length + '대';
+  document.getElementById('kpiCost').textContent = fmt.won(totalCost);
+  document.getElementById('kpiRecords').textContent = records.length;
+  document.getElementById('kpiEmergency').textContent = fmt.pct(emergencyRate);
+  
+  // Alert 계산
+  const alerts = calculateAlerts(vehicles, records);
+  document.getElementById('alertReplace').textContent = alerts.replace + '대';
+  document.getElementById('alertFrequent').textContent = alerts.frequent + '대';
+  document.getElementById('alertCost').textContent = alerts.highCost + '대';
+  
+  // Insights 생성
+  renderInsights(vehicles, records, alerts);
+  
+  // Charts
+  renderMonthlyChart(records);
+  renderTypeChart(records);
+  renderCampChart(vehicles);
+  
+  // Tables
+  setupFilters(vehicles);
+  renderVehicleTable(vehicles);
+  renderRecentRecords(records);
+}
+
+// ==================== 알림 계산 ====================
+function calculateAlerts(vehicles, records) {
+  let replace = 0, frequent = 0, highCost = 0;
+  
+  const avgCost = records.reduce((s, r) => s + r.cost, 0) / records.length;
+  
+  vehicles.forEach(v => {
+    const status = getVehicleStatus(v, records);
+    if (status.level === 'danger') replace++;
+    
+    // 7일 내 2회 정비 AND 하나 이상이 사후/긴급정비 (의미 있는 재정비)
+    const vRecords = records.filter(r => r.vehicle_id === v.vehicle_id);
+    vRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    let hasFrequent = false;
+    for (let i = 0; i < vRecords.length - 1; i++) {
+      const d1 = new Date(vRecords[i].date);
+      const d2 = new Date(vRecords[i+1].date);
+      if ((d1 - d2) / (1000*60*60*24) <= 7) {
+        const hasSerious = vRecords[i].type !== '예방정비' || vRecords[i+1].type !== '예방정비';
+        if (hasSerious) {
+          hasFrequent = true;
+          break;
+        }
+      }
+    }
+    if (hasFrequent) frequent++;
+    
+    // 평균 대비 3배 이상 고액 정비 이력
+    if (vRecords.some(r => r.cost > avgCost * 3)) highCost++;
+  });
+  
+  return { replace, frequent, highCost };
+}
+
+// ==================== 인사이트 ====================
+function renderInsights(vehicles, records, alerts) {
+  const insights = [];
+  
+  // 1. 교체 권고 차량
+  const replaceTargets = vehicles.filter(v => {
+    return getVehicleStatus(v, records).level === 'danger';
+  });
+  if (replaceTargets.length > 0) {
+    const top = replaceTargets.sort((a,b) => b.total_maintenance_cost - a.total_maintenance_cost)[0];
+    insights.push({
+      level: 'danger',
+      tag: '교체 검토',
+      text: `<strong>${top.vehicle_id}</strong> 차량, 연식 ${top.age_years}년 · 누적 정비비 ${fmt.won(top.total_maintenance_cost)} 초과 → 교체 검토 권고`
+    });
+  }
+  
+  // 2. 캠프별 긴급정비 편차
+  const camps = FLEET_DATA.meta.camps;
+  const campEmergency = {};
+  camps.forEach(c => {
+    const cRecords = records.filter(r => r.camp === c);
+    const emergency = cRecords.filter(r => r.type === '긴급정비').length;
+    campEmergency[c] = cRecords.length > 0 ? (emergency / cRecords.length * 100) : 0;
+  });
+  const avgEmergency = records.filter(r => r.type === '긴급정비').length / records.length * 100;
+  const worstCamp = Object.entries(campEmergency).sort((a,b) => b[1]-a[1])[0];
+  if (worstCamp[1] > avgEmergency + 5) {
+    insights.push({
+      level: 'warning',
+      tag: '운영 점검',
+      text: `<strong>${worstCamp[0]}</strong> 캠프의 긴급정비 비율이 ${fmt.pct(worstCamp[1])}로 전체 평균(${fmt.pct(avgEmergency)}) 대비 ${(worstCamp[1]-avgEmergency).toFixed(1)}%p 높음`
+    });
+  }
+  
+  // 3. 정비소별 평균 리드타임
+  const vendors = FLEET_DATA.meta.vendors;
+  const vendorLead = {};
+  vendors.forEach(v => {
+    const vRecords = records.filter(r => r.vendor === v);
+    if (vRecords.length > 0) {
+      vendorLead[v] = vRecords.reduce((s,r) => s + r.lead_days, 0) / vRecords.length;
+    }
+  });
+  const vendorEntries = Object.entries(vendorLead).sort((a,b) => a[1]-b[1]);
+  if (vendorEntries.length >= 2) {
+    const best = vendorEntries[0];
+    const worst = vendorEntries[vendorEntries.length-1];
+    if (worst[1] - best[1] >= 1.5) {
+      insights.push({
+        level: 'info',
+        tag: '벤더 관리',
+        text: `정비소별 평균 소요일 편차 발생 — 최단 <strong>${best[0]}</strong> ${best[1].toFixed(1)}일 vs 최장 <strong>${worst[0]}</strong> ${worst[1].toFixed(1)}일`
+      });
+    }
+  }
+  
+  // 4. 예방정비 비율
+  const preventRate = records.filter(r => r.type === '예방정비').length / records.length * 100;
+  if (preventRate < 60) {
+    insights.push({
+      level: 'warning',
+      tag: '정비 전략',
+      text: `예방정비 비율 ${fmt.pct(preventRate)} — 60% 미만으로 사후/긴급정비 의존도가 높음. 정기점검 주기 강화 검토 필요`
+    });
+  } else {
+    insights.push({
+      level: 'info',
+      tag: '긍정 지표',
+      text: `예방정비 비율 ${fmt.pct(preventRate)}로 안정적 운영 중 — 긴급정비 최소화에 기여`
+    });
+  }
+  
+  // 5. 재정비 빈발
+  if (alerts.frequent >= 3) {
+    insights.push({
+      level: 'warning',
+      tag: '품질 QA',
+      text: `30일 내 재정비가 발생한 차량 <strong>${alerts.frequent}대</strong> — 초기 정비 품질 또는 부품 이슈 가능성, 정비소 피드백 루프 점검 권고`
+    });
+  }
+  
+  // 렌더링
+  const container = document.getElementById('insightsList');
+  container.innerHTML = insights.map(i => `
+    <div class="insight-item ${i.level}">
+      <div class="insight-tag ${i.level}">${i.tag}</div>
+      <div>${i.text}</div>
+    </div>
+  `).join('');
+}
+
+// ==================== 차트: 월별 추이 ====================
+function renderMonthlyChart(records) {
+  const months = {};
+  records.forEach(r => {
+    const m = r.date.substring(0, 7);
+    if (!months[m]) months[m] = { 예방정비: 0, 사후정비: 0, 긴급정비: 0 };
+    months[m][r.type] += r.cost;
+  });
+  const sortedKeys = Object.keys(months).sort();
+  const labels = sortedKeys.map(k => k.substring(5) + '월');
+  
+  new Chart(document.getElementById('chartMonthly'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '예방정비', data: sortedKeys.map(k => months[k].예방정비), backgroundColor: '#10b981' },
+        { label: '사후정비', data: sortedKeys.map(k => months[k].사후정비), backgroundColor: '#f59e0b' },
+        { label: '긴급정비', data: sortedKeys.map(k => months[k].긴급정비), backgroundColor: '#ef4444' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => fmt.wonShort(v) } }
+      },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Pretendard Variable', size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt.won(ctx.parsed.y) } }
+      }
+    }
+  });
+}
+
+// ==================== 차트: 유형별 ====================
+function renderTypeChart(records) {
+  const counts = { 예방정비: 0, 사후정비: 0, 긴급정비: 0 };
+  records.forEach(r => counts[r.type]++);
+  
+  new Chart(document.getElementById('chartType'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{
+        data: Object.values(counts),
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { family: 'Pretendard Variable', size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '건 (' + (ctx.parsed/records.length*100).toFixed(1) + '%)' } }
+      }
+    }
+  });
+}
+
+// ==================== 차트: 캠프별 ====================
+function renderCampChart(vehicles) {
+  const camps = {};
+  vehicles.forEach(v => {
+    if (!camps[v.camp]) camps[v.camp] = { total: 0, count: 0 };
+    camps[v.camp].total += v.uptime_rate;
+    camps[v.camp].count++;
+  });
+  const labels = Object.keys(camps);
+  const data = labels.map(l => camps[l].total / camps[l].count);
+  
+  new Chart(document.getElementById('chartCamp'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: '평균 가동률 (%)',
+        data,
+        backgroundColor: data.map(v => v < 90 ? '#ef4444' : v < 93 ? '#f59e0b' : '#3b82f6'),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { min: 80, max: 100, ticks: { callback: v => v + '%' } },
+        y: { grid: { display: false } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '가동률: ' + ctx.parsed.x.toFixed(1) + '%' } }
+      }
+    }
+  });
+}
+
+// ==================== 테이블 필터 ====================
+function setupFilters(vehicles) {
+  const campFilter = document.getElementById('campFilter');
+  FLEET_DATA.meta.camps.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    campFilter.appendChild(opt);
+  });
+  
+  ['searchInput', 'campFilter', 'statusFilter'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => applyFilters(vehicles));
+  });
+}
+
+function applyFilters(vehicles) {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const camp = document.getElementById('campFilter').value;
+  const status = document.getElementById('statusFilter').value;
+  const records = FLEET_DATA.maintenance_records;
+  
+  const filtered = vehicles.filter(v => {
+    if (q && !(v.vehicle_id.toLowerCase().includes(q) || v.model.toLowerCase().includes(q))) return false;
+    if (camp && v.camp !== camp) return false;
+    if (status && getVehicleStatus(v, records).level !== status) return false;
+    return true;
+  });
+  renderVehicleTable(filtered);
+}
+
+// ==================== 차량 테이블 ====================
+function renderVehicleTable(vehicles) {
+  const tbody = document.getElementById('vehicleTbody');
+  const records = FLEET_DATA.maintenance_records;
+  
+  if (vehicles.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">조건에 맞는 차량이 없습니다.</td></tr>';
+    return;
+  }
+  
+  const sorted = [...vehicles].sort((a,b) => b.total_maintenance_cost - a.total_maintenance_cost);
+  
+  tbody.innerHTML = sorted.map(v => {
+    const status = getVehicleStatus(v, records);
+    return `
+      <tr>
+        <td><strong>${v.vehicle_id}</strong></td>
+        <td>${v.camp}</td>
+        <td>${v.model}</td>
+        <td>${v.year}년 (${v.age_years}년차)</td>
+        <td>${fmt.km(v.current_mileage)}</td>
+        <td>${fmt.won(v.total_maintenance_cost)}</td>
+        <td>${v.maintenance_count}회</td>
+        <td>${fmt.pct(v.uptime_rate)}</td>
+        <td><span class="badge badge-${status.level}">${status.label}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ==================== 최근 이력 ====================
+function renderRecentRecords(records) {
+  const tbody = document.getElementById('recordsTbody');
+  const recent = records.slice(0, 10);
+  tbody.innerHTML = recent.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td><strong>${r.vehicle_id}</strong></td>
+      <td>${r.camp}</td>
+      <td><span class="badge badge-type-${r.type}">${r.type}</span></td>
+      <td>${r.part}</td>
+      <td>${r.vendor}</td>
+      <td>${fmt.won(r.cost)}</td>
+      <td>${r.lead_days}일</td>
+    </tr>
+  `).join('');
+}
+
+// 시작
+loadData();
+</script>
+
+</body>
+</html>
